@@ -12,9 +12,8 @@ import java.lang.Math;
     Map<String, Float> memory = new HashMap<String, Float>();
     Scanner reader = new Scanner(System.in);
 
-    float eval(String left, int op, String right) {
-        float l = memory.containsKey(left) ? memory.get(left) : Float.parseFloat(left);
-        float r = memory.containsKey(right) ? memory.get(right) : Float.parseFloat(right);
+    float eval(float l, int op, float r) {
+        
         switch ( op ) {
             case MUL : return l * r;
             case DIV : return l / r;
@@ -40,6 +39,24 @@ import java.lang.Math;
     }
 
     int evalBool(float left, String op, float right) {
+        if(op.equals("&&")){
+            if(left!=0 && right!=0) {return 1;}
+        }
+        else if (op.equals("||")){
+            if(left!=0 || right!=0) {return 1;}
+        }
+        return 0;
+    }
+    int evalBool(float left, String op, int right) {
+        if(op.equals("&&")){
+            if(left!=0 && right!=0) {return 1;}
+        }
+        else if (op.equals("||")){
+            if(left!=0 || right!=0) {return 1;}
+        }
+        return 0;
+    }
+    int evalBool(int left, String op, float right) {
         if(op.equals("&&")){
             if(left!=0 && right!=0) {return 1;}
         }
@@ -77,9 +94,11 @@ prog: stat+;
 stat:   e NEWLINE               {System.out.println($e.v);}
     |   boolexpr NEWLINE        {System.out.println($boolexpr.i);}
     |   function NEWLINE        {System.out.println($function.f);}
+    |   mixedexpr NEWLINE       {System.out.println($mixedexpr.m);}
     |   ID '=' function NEWLINE {memory.put($ID.text, $function.f);}
     |   ID '=' e NEWLINE        {memory.put($ID.text, $e.v);}
     |   ID '=' boolexpr NEWLINE {memory.put($ID.text, (float)$boolexpr.i);}
+    |   ID '=' mixedexpr NEWLINE{memory.put($ID.text, (float)$mixedexpr.m);}
     |   NEWLINE
     ;
 
@@ -88,23 +107,33 @@ function returns [float f]
     | ID '(' a=e ')'            {$f = solveFunction($ID.text, $a.v);}
     ;
 
+mixedexpr returns [float m]
+    : a=e op=('*'|'/') b=boolexpr          {$m = eval($a.v, $op.type, (float)$b.i);}
+    | b=boolexpr op=('*'|'/') a=e          {$m = eval((float)$b.i, $op.type, $a.v);}
+    | a=e op=('+'|'-') b=boolexpr          {$m = eval($a.v, $op.type, (float)$b.i);}
+    | b=boolexpr op=('+'|'-') a=e          {$m = eval((float)$b.i, $op.type, $a.v);}
+    | b=boolexpr op=('*'|'/') c=boolexpr   {$m = eval((float)$b.i, $op.type, (float)$c.i);}
+    | b=boolexpr op=('+'|'-') c=boolexpr   {$m = eval((float)$b.i, $op.type, (float)$c.i);}
+    | a=e op=AND b=boolexpr                {$m = evalBool($a.v, $op.text, (float)$b.i);}
+    | b=boolexpr op=AND a=e                {$m = evalBool((float)$b.i, $op.text, $a.v);}
+    | a=e op=OR b=boolexpr                 {$m = evalBool($a.v, $op.text, (float)$b.i);}
+    | b=boolexpr op=OR a=e                 {$m = evalBool((float)$b.i, $op.text, $a.v);}
+    | '('mixedexpr')'                       {$m = $mixedexpr.m;}
+    ;
+
 boolexpr returns [int i]
-    : x=boolexpr op=AND y=boolexpr   {$i = evalBool($x.i, $op.text, $y.i);}
-    | a=e op=AND x=boolexpr          {$i = evalBool($a.v, $op.text, $x.i);}
-    | x=boolexpr op=AND b=e          {$i = evalBool($x.i, $op.text, $b.v);}
-    | a=e op=AND b=e                 {$i = evalBool($a.v, $op.text, $b.v);}
-    | x=boolexpr op=OR y=boolexpr    {$i = evalBool($x.i, $op.text, $y.i);}
-    | a=e op=OR x=boolexpr           {$i = evalBool($a.v, $op.text, $x.i);}
-    | x=boolexpr op=OR b=e           {$i = evalBool($x.i, $op.text, $b.v);}
-    | a=e op=OR b=e                  {$i = evalBool($a.v, $op.text, $b.v);}
-    | op=NOT x=boolexpr              {$i = negation($op.text, $x.i);}
-    | op=NOT a=e                     {$i = negation($op.text, $a.v);}
-    | '(' boolexpr ')'               {$i = $boolexpr.i;}
+    : x=boolexpr op=AND y=boolexpr       {$i = evalBool($x.i, $op.text, $y.i);}
+    | x=boolexpr op=OR y=boolexpr        {$i = evalBool($x.i, $op.text, $y.i);}
+    | op=NOT x=boolexpr                  {$i = negation($op.text, $x.i);}
+    | a=e op=AND b=e                     {$i = evalBool($a.v, $op.text, $b.v);}
+    | a=e op=OR b=e                      {$i = evalBool($a.v, $op.text, $b.v);}
+    | op=NOT a=e                         {$i = negation($op.text, $a.v);}
+    | '(' boolexpr ')'                   {$i = $boolexpr.i;}
     ;
 
 e returns [float v]
-    : a=e op=('*'|'/') b=e  {$v = eval($a.text, $op.type, $b.text);}
-    | a=e op=('+'|'-') b=e  {$v = eval($a.text, $op.type, $b.text);}
+    : a=e op=('*'|'/') b=e  {$v = eval($a.v, $op.type, $b.v);}
+    | a=e op=('+'|'-') b=e  {$v = eval($a.v, $op.type, $b.v);}
     | FLOAT                 {$v = getFloatValue($FLOAT.text);}
     | ID
       {
@@ -117,14 +146,14 @@ e returns [float v]
 
 
 
-AND : '&&' ;	    //IPadded
-OR : '||';			//IPadded
-NOT : '!' ;			//IPadded
-
 MUL : '*' ;
 DIV : '/' ;
 ADD : '+' ;
 SUB : '-' ;
+AND : '&&' ;	    //IPadded
+OR : '||';			//IPadded
+NOT : '!' ;			//IPadded
+
 
 ID  :   [a-zA-Z]+ ;      // match identifiers
 FLOAT
