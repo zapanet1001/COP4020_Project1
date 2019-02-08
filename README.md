@@ -20,3 +20,13 @@ You can view the original Expr.g4 in the book by clicking on the file name in ch
   >javac -d . *.java</br>
   >grun bc prog test4.bc</br>
   3. This should output the results of the commands saved in test4.bc (replace with other test files to test output)
+  
+  
+~~~EDIT~~~~~ 8 Feb 2019<br>
+to run with parse tree generated<br>
+>grun bc prog testfile.bc -gui</br>
+
+to run with ur own text input<br>
+>grun bc prog<br>
+>type in input<br>
+>ctrl-d<br>
