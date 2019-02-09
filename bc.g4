@@ -87,6 +87,40 @@ import java.lang.Math;
         }
         return 0;
     }
+    float decrement(String s){
+        if(memory.containsKey(s)){
+            memory.put(s, memory.get(s) - 1); 
+            return memory.get(s);
+        }
+        return 0;
+    }
+
+    float decrement_post(String s){
+        float r;
+        if(memory.containsKey(s)){
+            r = memory.get(s);
+            memory.put(s, memory.get(s) - 1); 
+            return r;
+        }
+        return 0;
+    }
+
+    float increment(String s){
+        if(memory.containsKey(s)){
+            memory.put(s, memory.get(s) + 1); 
+            return memory.get(s);
+        }
+        return 0;
+    }    
+    float increment_post(String s){
+        float r;
+        if(memory.containsKey(s)){
+            r = memory.get(s);
+            memory.put(s, memory.get(s) + 1); 
+            return r;
+        }
+        return 0;
+    }
 }
 
 prog: stat+;
@@ -95,6 +129,7 @@ stat:   e NEWLINE               {System.out.println($e.v);}
     |   boolexpr NEWLINE        {System.out.println($boolexpr.i);}
     |   function NEWLINE        {System.out.println($function.f);}
     |   mixedexpr NEWLINE       {System.out.println($mixedexpr.m);}
+    |   stdexpr NEWLINE         {System.out.println($stdexpr.s);}
     |   ID '=' function NEWLINE {memory.put($ID.text, $function.f);}
     |   ID '=' e NEWLINE        {memory.put($ID.text, $e.v);}
     |   ID '=' boolexpr NEWLINE {memory.put($ID.text, (float)$boolexpr.i);}
@@ -130,6 +165,14 @@ boolexpr returns [int i]
     | op=NOT a=e                         {$i = negation($op.text, $a.v);}
     | '(' boolexpr ')'                   {$i = $boolexpr.i;}
     ;
+
+stdexpr returns [float s]
+    : '--' a=e                {$s = decrement($a.text);}
+    | a=e '--'                {$s = decrement_post($a.text);}
+    | '++' a=e                {$s = increment($a.text);}
+    | a=e '++'                {$s = increment_post($a.text);}
+    ;
+
 
 e returns [float v]
     : a=e op=('*'|'/') b=e  {$v = eval($a.v, $op.type, $b.v);}
